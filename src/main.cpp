@@ -11,8 +11,6 @@ bool ultimoEstadoPorta=false;//guarda o último valor do estado da porta
 bool lerEstadoPorta=true;
 
 char status_channel[] = "status";
-char in_channel[] = "in";
-
 
 unsigned long intPeriodoEnvio=10000;
 
@@ -29,15 +27,11 @@ unsigned long lasttimeCheck=0;
 ADC_MODE(ADC_VCC);
 
 
-
-
 void enviaPresencas(){
       checkConnections();
       Serial.println("lasttimeCheck=" +(String)lasttimeCheck);
       Serial.println("intPeriodoEnvio=" +(String)intPeriodoEnvio);
       lasttimeCheck = millis();
-      //Serial.println("NOVO FW!!!");
-      // Le a informacao do sensor
 
 
       StaticJsonBuffer<220> jsonBuffer;

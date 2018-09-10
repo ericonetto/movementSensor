@@ -28,10 +28,10 @@ bool testHTTPSubscribeConn(){
   http.setAuthorization(device_login, device_pass);
 
   String url_to_call;
-  if (String(_rootURL).indexOf("http://", 0)>0){
-    url_to_call=String(_rootURL) + "/" + String(topic);  //Specify request destination
+  if (String(_rootDomain).indexOf("http://", 0)>0){
+    url_to_call=String(_rootDomain) + String (":") + String(_rootPort)  + "/" + String(topic);  //Specify request destination
   }else{
-    url_to_call=String("http://") + String(_rootURL) + "/" + String(topic);  //Specify request destination
+    url_to_call=String("http://") + String(_rootDomain)  + String (":") + String(_rootPort) + "/" + String(topic);  //Specify request destination
   }
 
   http.begin(url_to_call);  //Specify request destination
@@ -70,10 +70,10 @@ bool pubHttp(char const channel[], char const msg[]){
   http.addHeader("Accept", "application/json");
   http.setAuthorization(device_login, device_pass);
 
-  if (String(_rootURL).indexOf("http://", 0)>0){
-    http.begin(String(_rootURL) + "/" + String(topic));  //Specify request destination
+  if (String(_rootDomain).indexOf("http://", 0)>0){
+    http.begin(String(_rootDomain)  + String (":") + String(_rootPort) + "/" + String(topic));  //Specify request destination
   }else{
-    http.begin(String("http://") + String(_rootURL) + "/" + String(topic));  //Specify request destination
+    http.begin(String("http://") + String(_rootDomain)  + String (":") + String(_rootPort) + "/" + String(topic));  //Specify request destination
   }
 
   int httpCode=http.POST(String(msg));
@@ -108,10 +108,10 @@ void subHttp(char const channel[],CHANNEL_CALLBACK_SIGNATURE){
   http.addHeader("Content-Type", "application/json");
   http.setAuthorization(device_login, device_pass);
 
-  if (String(_rootURL).indexOf("http://", 0)>0){
-    http.begin(String(_rootURL) + "/" + String(topic));  //Specify request destination
+  if (String(_rootDomain).indexOf("http://", 0)>0){
+    http.begin(String(_rootDomain)  + String (":") + String(_rootPort) + "/" + String(topic));  //Specify request destination
   }else{
-    http.begin(String("http://") + String(_rootURL) + "/" + String(topic));  //Specify request destination
+    http.begin(String("http://") + String(_rootDomain)  + String (":") + String(_rootPort) + "/" + String(topic));  //Specify request destination
   }
   
   int httpCode = http.GET();

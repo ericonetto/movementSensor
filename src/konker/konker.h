@@ -699,7 +699,26 @@ void konkerConfig(char rootURL[64], char productPefix[6], bool encripted){
 	digitalWrite(D5, HIGH);
 
   _encripted=encripted;
-	strncpy(_rootURL, rootURL, 64);
+
+	if (strstr("http://",rootURL)!=NULL){
+		const char *b = new char(rootURL[7-64]);
+		strcpy(_rootDomain,b);
+	}else{
+		strcpy(_rootDomain,rootURL);
+	}
+
+	char * pch = strtok (_rootDomain,":");
+	if (pch != NULL){
+		strcpy(_rootDomain,pch);
+		pch = strtok (NULL, ":");
+		_rootPort=atoi(pch);
+	}
+
+	Serial.print("_rootDomain: ");
+	Serial.println(String(_rootDomain));
+	Serial.print("_rootPort: ");
+	Serial.println(String(_rootPort));
+
 	setName(productPefix);
 	pinMode(_STATUS_LED, OUTPUT);
 	digitalWrite(_STATUS_LED, LOW);

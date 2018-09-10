@@ -5,14 +5,13 @@
 #include "../helpers/globals.h"
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
-
-
+#include "../helpers/jsonhelper.h"
 
 #ifdef ESP8266
 #include <functional>
-#define CALLBACK_SIGNATURE std::function<bool(uint8_t*, unsigned int)> chan_callback
+#define UPDATE_SUCCESS_CALLBACK_SIGNATURE std::function<void(char[16])> succes_update_callback
 #else
-#define CALLBACK_SIGNATURE bool (*chan_callback)(uint8_t*, unsigned int)
+#define UPDATE_SUCCESS_CALLBACK_SIGNATURE void (*succes_update_callback)(char[16])
 #endif
 
 
@@ -29,24 +28,58 @@ class ESP8266HTTPKonkerUpdate: public ESP8266HTTPUpdate{
   }
 };
 
+void getVersion(String strPayload, char *version){
 
-bool checkVersionCallBack(byte* payload, unsigned int length){
-    return 1;
+
+  if(parse_JSON_item(strPayload,"version",version)){
+    Serial.println("Got version =" + String(version));
+  }else{
+    strcpy(version,"");
+    Serial.println("Failed to parse version"); 
+  }
 }
 
-
-//http://localhost:8090/registry-data/firmware/2q7kibmutjdj
-bool hasUpdate(char const rootURL[], CALLBACK_SIGNATURE){
+void updateSucessCallBack(char *version){
+  Serial.println("[update] Update ok, sending confirmation."); 
   bool subCode=0;
 
-  String fwUpdateURL;
-  if (String(_rootURL).indexOf("http://", 0)>0){
-    fwUpdateURL = String(rootURL) + String("/firmware/") + String(device_login); 
+  String fwUpdateURL= "http://" + String(_rootDomain) + String (":") + String(_rootPort) + String("/firmware/") + String(device_login); 
+  HTTPClient http;  //Declare an object of class HTTPClient
+  http.begin(fwUpdateURL);  //Specify request destination
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("Accept", "application/json");
+  http.setAuthorization(device_login, device_pass);
+
+  String smsg=String("{\"version\": \"" + String(version) + "\",\"status\":\"UPDATED\"}");
+  int httpCode = http.sendRequest("PUT", String(smsg));
+
+
+  Serial.println("Confirmantion send: " + fwUpdateURL+  + "; Body: " + smsg + "; httpcode: " + String(httpCode));
+  Serial.print(">");
+
+  http.end();   //Close connection
+
+
+  Serial.print(">");
+
+  subCode=interpretHTTPCode(httpCode);
+
+  if (!subCode){
+    Serial.println("failed");
+    return;
   }else{
-    fwUpdateURL = "http://" + String(rootURL) + String("/firmware/") + String(device_login); 
+    Serial.println("sucess");
+    return;
   }
+  Serial.println("failed");
+  Serial.println("");
+}
 
+void hasUpdate(char const rootDomain[],int rootPort, char *version){
+  bool subCode=0;
 
+  String fwUpdateURL= "http://" + String(rootDomain) + String (":") + String(rootPort) + String("/firmware/") + String(device_login); 
+  
   HTTPClient http;  //Declare an object of class HTTPClient
   http.addHeader("Content-Type", "application/json");
   http.setAuthorization(device_login, device_pass);
@@ -62,7 +95,6 @@ bool hasUpdate(char const rootURL[], CALLBACK_SIGNATURE){
     Serial.println("failed");
     Serial.println("");
     failedComm=1;
-    return 0;
   }else{
     Serial.println("sucess");
     Serial.println("");
@@ -72,50 +104,42 @@ bool hasUpdate(char const rootURL[], CALLBACK_SIGNATURE){
     int playloadSize=http.getSize();
     http.end();   //Close connection
     if (strPayload!="[]"){
-      unsigned char* payload = (unsigned char*) strPayload.c_str(); // cast from string to unsigned char*
-      return chan_callback(payload,playloadSize);
+      getVersion(strPayload,version);
+      return;
     }
   }
   Serial.println("failed");
   Serial.println("");
-  return 0;
+  strcpy(version,"");
 }
 
+void checkForUpdates(char const rootDomain[],int rootPort, char *expectedVersion, UPDATE_SUCCESS_CALLBACK_SIGNATURE){
+    char version[16];
+    hasUpdate(rootDomain, rootPort, version);
 
-//http://localhost:8090/registry-data/firmware/2q7kibmutjdj
-bool hasUpdate(char const rootURL[]){
-    return hasUpdate(rootURL, checkVersionCallBack);
-}
-
-
-void checkForUpdates(){
-    if (hasUpdate(_rootURL)){
-        String fwUpdateURL;
-        if (String(_rootURL).indexOf("http://", 0)>0){
-          fwUpdateURL = String(_rootURL); 
-        }else{
-          fwUpdateURL = "http://" + String(_rootURL); 
-        }
-        Serial.println("UPDATING...."); 
-        ESP8266HTTPKonkerUpdate ESPhttpKonkerUpdate;
-        //curl -u 23sv4apjs6p4:aJI832fjsog6 -X GET http://192.168.0.52:8090/firmware/23sv4apjs6p4/binary
-        //ESPhttpUpdate.update(fwUpdateURL, 8090, String("/firmware/") + String(device_login) +String("/binary")); 
-        String testUpdate =  "http://192.168.0.52";
-
-        
-        t_httpUpdate_return ret = ESPhttpKonkerUpdate.update("192.168.0.52", 8090, String("/firmware/") + String(device_login) +String("/binary"));    
-        switch(ret) {
-        case HTTP_UPDATE_FAILED:
-            Serial.println("[update] Update failed.");
-            break;
-        case HTTP_UPDATE_NO_UPDATES:
-            Serial.println("[update] Update no Update.");
-            break;
-        case HTTP_UPDATE_OK:
-            Serial.println("[update] Update ok."); // may not called we reboot the ESP
-            break;
+    if (strcmp(version,expectedVersion)==0  || strcmp("",expectedVersion)==0){
+      Serial.println("UPDATING...."); 
+      ESP8266HTTPKonkerUpdate ESPhttpKonkerUpdate;
+      ESPhttpKonkerUpdate.rebootOnUpdate(false);
+      t_httpUpdate_return ret = ESPhttpKonkerUpdate.update(String(rootDomain), rootPort, String("/firmware/") + String(device_login) +String("/binary"));    
+      switch(ret) {
+      case HTTP_UPDATE_FAILED:
+          Serial.println("[update] Update failed.");
+          break;
+      case HTTP_UPDATE_NO_UPDATES:
+          Serial.println("[update] Update no Update.");
+          break;
+      case HTTP_UPDATE_OK:          
+          updateSucessCallBack(version); 
+          ESP.restart();
+          break;
       }
     }
+}
+
+void checkForUpdates(){
+  char expectedVersion[16]="";
+  checkForUpdates(_rootDomain, _rootPort, expectedVersion, updateSucessCallBack);
 }
 
 

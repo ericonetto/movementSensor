@@ -19,7 +19,8 @@ char device_pass[32];
 const char sub_dev_modifier[4] = "sub";
 const char pub_dev_modifier[4] = "pub";
 char prefix[5] = "data";
-char _rootURL[64]="data.demo.konkerlabs.net";
+char _rootDomain[64]="data.demo.konkerlabs.net";
+int _rootPort=80;
 
 char *getChipId(){
   return  ChipId;
