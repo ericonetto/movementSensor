@@ -700,18 +700,19 @@ void konkerConfig(char rootURL[64], char productPefix[6], bool encripted){
 
   _encripted=encripted;
 
-	if (strstr("http://",rootURL)!=NULL){
-		const char *b = new char(rootURL[7-64]);
-		strcpy(_rootDomain,b);
-	}else{
-		strcpy(_rootDomain,rootURL);
+	int i =String(_rootDomain).indexOf("http://");
+	if(i==0){
+		strncpy(_rootDomain,String(_rootDomain).substring(i+7).c_str(),64);
+ 	}else{
+		strncpy(_rootDomain,rootURL,64);
 	}
 
-	char * pch = strtok (_rootDomain,":");
-	if (pch != NULL){
-		strcpy(_rootDomain,pch);
-		pch = strtok (NULL, ":");
-		_rootPort=atoi(pch);
+	i =String(_rootDomain).indexOf(":");
+	if(i>0){
+		_rootPort=String(_rootDomain).substring(i+1).toInt(); 
+		strncpy(_rootDomain,String(_rootDomain).substring(0,i).c_str(),64);
+	}else{
+		strncpy(_rootDomain,rootURL,64);
 	}
 
 	Serial.print("_rootDomain: ");
@@ -735,7 +736,9 @@ void konkerConfig(char rootURL[64], char productPefix[6], bool encripted){
   //tenta se conectar ao wifi configurado
   //caso já exista o arquivo de wifi ele vai tentar se conectar
   if(tryConnectClientWifi()){
-    getPlataformCredentials((char*)"/crd.json");
+    if(getPlataformCredentials((char*)"/crd.json")){
+			checkConnections();
+		}
     return;
   }
 
@@ -823,6 +826,7 @@ void konkerConfig(char rootURL[64], char productPefix[6], bool encripted){
 		delay(3000);
 		ESP.reset();
 	}
+
 
 
 }

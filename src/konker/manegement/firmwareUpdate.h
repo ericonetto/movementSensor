@@ -75,7 +75,7 @@ void updateSucessCallBack(char *version){
   Serial.println("");
 }
 
-void hasUpdate(char const rootDomain[],int rootPort, char *version){
+bool hasUpdate(char const rootDomain[],int rootPort, char *version){
   bool subCode=0;
 
   String fwUpdateURL= "http://" + String(rootDomain) + String (":") + String(rootPort) + String("/firmware/") + String(device_login); 
@@ -94,7 +94,6 @@ void hasUpdate(char const rootDomain[],int rootPort, char *version){
   if (!subCode){
     Serial.println("failed");
     Serial.println("");
-    failedComm=1;
   }else{
     Serial.println("sucess");
     Serial.println("");
@@ -105,34 +104,34 @@ void hasUpdate(char const rootDomain[],int rootPort, char *version){
     http.end();   //Close connection
     if (strPayload!="[]"){
       getVersion(strPayload,version);
-      return;
+      return 1;
     }
   }
-  Serial.println("failed");
-  Serial.println("");
   strcpy(version,"");
+  return 0;
 }
 
 void checkForUpdates(char const rootDomain[],int rootPort, char *expectedVersion, UPDATE_SUCCESS_CALLBACK_SIGNATURE){
     char version[16];
-    hasUpdate(rootDomain, rootPort, version);
-
-    if (strcmp(version,expectedVersion)==0  || strcmp("",expectedVersion)==0){
-      Serial.println("UPDATING...."); 
-      ESP8266HTTPKonkerUpdate ESPhttpKonkerUpdate;
-      ESPhttpKonkerUpdate.rebootOnUpdate(false);
-      t_httpUpdate_return ret = ESPhttpKonkerUpdate.update(String(rootDomain), rootPort, String("/firmware/") + String(device_login) +String("/binary"));    
-      switch(ret) {
-      case HTTP_UPDATE_FAILED:
-          Serial.println("[update] Update failed.");
-          break;
-      case HTTP_UPDATE_NO_UPDATES:
-          Serial.println("[update] Update no Update.");
-          break;
-      case HTTP_UPDATE_OK:          
-          updateSucessCallBack(version); 
-          ESP.restart();
-          break;
+    
+    if (hasUpdate(rootDomain, rootPort, version)){
+      if(String(version).indexOf(String(expectedVersion))>=0 || String(version)==""){
+        Serial.println("UPDATING...."); 
+        ESP8266HTTPKonkerUpdate ESPhttpKonkerUpdate;
+        ESPhttpKonkerUpdate.rebootOnUpdate(false);
+        t_httpUpdate_return ret = ESPhttpKonkerUpdate.update(String(rootDomain), rootPort, String("/firmware/") + String(device_login) +String("/binary"));    
+        switch(ret) {
+        case HTTP_UPDATE_FAILED:
+            Serial.println("[update] Update failed.");
+            break;
+        case HTTP_UPDATE_NO_UPDATES:
+            Serial.println("[update] Update no Update.");
+            break;
+        case HTTP_UPDATE_OK:          
+            updateSucessCallBack(version); 
+            ESP.restart();
+            break;
+        }
       }
     }
 }

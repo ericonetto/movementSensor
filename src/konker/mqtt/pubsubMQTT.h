@@ -19,6 +19,19 @@ void MQTTLoop(){
   client.loop();
 }
 
+void callback(char* topic, byte* payload, unsigned int length) {
+  int i;
+  int state=0;
+
+  Serial.print("Message received [");
+  Serial.print(topic);
+  Serial.print("] ");
+
+  callSubChannelCallback(topic, payload, length);
+
+}
+
+
 bool connectMQTT(char r_server[], int r_port, char r_device_login[], char r_device_pass[]){
     Serial.print("Trying to connect to MQTT broker ");
 
@@ -50,19 +63,6 @@ bool connectMQTT(char r_server[], int r_port, char r_device_login[], char r_devi
 bool connectMQTT(){
 	return connectMQTT(server,port,device_login,device_pass);
 }
-
-void callback(char* topic, byte* payload, unsigned int length) {
-  int i;
-  int state=0;
-
-  Serial.print("Message received [");
-  Serial.print(topic);
-  Serial.print("] ");
-
-  callSubChannelCallback(topic, payload, length);
-
-}
-
 
 
 void buildMQTTSUBTopic(char const device_login[], char const channel[], char *topic){
