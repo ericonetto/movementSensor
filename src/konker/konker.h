@@ -21,6 +21,7 @@ char health_channel[]="health";
 
 int _netFailureAdress=0;
 int _mqttFailureAdress=1;
+int _httpFailureAdress=2;
 
 bool _encripted=true;
 //WiFiServer httpServer(80);// create object
@@ -57,15 +58,17 @@ void healthUpdate(char *health_channel){
 
 	delay(10);
 
-  char content[2];
-  readFile(healthFile,content,0,2);
+  char content[3];
+  readFile(healthFile,content,0,3);
   int nf = content[_netFailureAdress] - '0';
   int mf = content[_mqttFailureAdress] - '0';
+	int hf = content[_httpFailureAdress] - '0';
 
 	//{"p":0}
   jsonMSG["build"] = (String)PIO_SRC_REV;
   jsonMSG["nfail"] = nf;
   jsonMSG["mfail"] = mf;
+	jsonMSG["hfail"] = hf;
 
   jsonMSG.printTo(bufferJ, sizeof(bufferJ));
 	char mensagemjson[1024];
@@ -76,11 +79,11 @@ void healthUpdate(char *health_channel){
 
 	pubHttp(health_channel, mensagemjson);
 
-  if(nf==0 && mf==0){
+  if(nf==0 && mf==0 && hf==0){
     return;
   }
   //clear error flags
-  saveFile(healthFile,(char*)"00");
+  saveFile(healthFile,(char*)"000");
 
 }
 
@@ -196,16 +199,6 @@ bool tryConnectClientWifi(){
 }
 
 
-bool testServerConn(){
-	bool test=testHTTPSubscribeConn();
-	#ifdef pubsubMQTT
-		test=test && connectMQTT();
-	#endif	
-
-	return test;
-}
-
-
 bool connectToWiFiAndPubSubServers(){
   if(WiFi.status()!=WL_CONNECTED){
     if(!tryConnectClientWifi()){
@@ -217,11 +210,19 @@ bool connectToWiFiAndPubSubServers(){
 
 
 	Serial.println("Cheking server connections..");
-	if(!testServerConn()){
+	#ifdef pubsubMQTT
+	if(!connectMQTT()){
 		Serial.println("Failed!");
     appendToFile(healthFile,(char*)"1", _mqttFailureAdress);
 		return 0;
 	}
+	#endif
+	if(!testHTTPSubscribeConn()){
+		Serial.println("Failed!");
+    appendToFile(healthFile,(char*)"1", _httpFailureAdress);
+		return 0;
+	}
+
 
 	return 1;
 }
@@ -672,7 +673,7 @@ bool get_platform_credentials_from_configurator(){
     //Removing the Wifi Configuration
     SPIFFS.remove(wifiFile);
     //save hinitial ealth state flags
-    saveFile(healthFile,(char*)"00");
+    saveFile(healthFile,(char*)"000");
 
     //wifiManager.resetSettings();
 

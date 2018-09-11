@@ -7,6 +7,7 @@
 #define presence_pin  5
 
 
+
 char status_channel[] = "status";
 
 unsigned long intPeriodoEnvio=10000;
@@ -135,7 +136,7 @@ void loop(){
     konkerLoop();
     delay(100);
     presencafunc();
-
+    
     subHttp("led",ledCallback);
     
     if ((millis()-lasttimeCheck) > intPeriodoEnvio){

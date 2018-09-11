@@ -98,7 +98,7 @@ bool pubHttp(char const channel[], char const msg[]){
 
 
 
-void subHttp(char const channel[],CHANNEL_CALLBACK_SIGNATURE){
+bool subHttp(char const channel[],CHANNEL_CALLBACK_SIGNATURE){
   bool subCode=0;
   char topic[32];
 
@@ -137,9 +137,10 @@ void subHttp(char const channel[],CHANNEL_CALLBACK_SIGNATURE){
       unsigned char* payload = (unsigned char*) strPayload.c_str(); // cast from string to unsigned char*
       chan_callback(payload,playloadSize);
     }
+    return 1;
   }
 
-
+  return 0;
 }
 
 

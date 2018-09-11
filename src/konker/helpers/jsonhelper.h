@@ -60,18 +60,31 @@ bool parse_JSON_item(String json, char *itemName, char *returnVal){
 }
 
 
-char  *parse_JSON_dataItem(String json, char *itemName){
+bool parse_JSON_dataItem_from_array(String json, char *itemName, char *returnVal){
 	const char *ival = NULL;
-	Serial.println("Parsing json item: " + (String)itemName);
 	StaticJsonBuffer<1024> jsonBuffer;
 	JsonArray& array = jsonBuffer.parseArray(json);
 	JsonObject& jsonMSG = array[0]["data"];
-	if (jsonMSG.containsKey(itemName)) ival = jsonMSG[itemName];
-	char *it = (char*) ival;
-
-	return it;
+	if (jsonMSG.containsKey(itemName)){
+		strcpy(returnVal,jsonMSG[itemName]);
+		return 1;
+	}else{
+		return 0;
+	}
 }
 
+
+bool parseJSON_data(String json, char *itemName, char *returnVal){
+	if(parse_JSON_item(json,itemName,returnVal)){
+		return 1;
+    }else{ 
+        if(parse_JSON_dataItem_from_array(json,itemName,returnVal)){
+			return 1;
+        }else{
+            return 0;
+        }
+    }
+}
 
 void  parse_JSON_timestamp(String json, char *chrTS, int chrTSsize){
 	const char *ival = NULL;
@@ -190,6 +203,7 @@ bool  getJsonItemFromFile(String filePath, char *itemName, char *returnVal){
 		return 0;
 	}
 }
+
 
 
 

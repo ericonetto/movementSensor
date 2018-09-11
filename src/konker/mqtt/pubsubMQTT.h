@@ -33,6 +33,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 
 bool connectMQTT(char r_server[], int r_port, char r_device_login[], char r_device_pass[]){
+    if(client.connected()){
+      Serial.print("Already connected to MQTT broker ");
+      return 1;
+    }
     Serial.print("Trying to connect to MQTT broker ");
 
 
