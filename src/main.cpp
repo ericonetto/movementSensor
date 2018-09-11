@@ -1,7 +1,7 @@
 
 #include <Arduino.h>
-#include "./konker/mqtt/pubsubMQTT.h"
-#include "./konker/konker.h"
+#include <konkerMQTT.h>
+#include <konker.h>
 
 
 #define presence_pin  5
